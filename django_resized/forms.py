@@ -2,6 +2,7 @@ import os
 import sys
 from io import BytesIO
 from PIL import Image, ImageFile, ImageOps, ExifTags
+from PIL import ImageSequence
 from django.conf import settings
 from django.core.files.base import ContentFile
 
@@ -70,7 +71,7 @@ class ResizedImageFieldFile(ImageField.attr_class):
         if self.field.force_format and self.field.force_format.lower() in ('jpeg', 'jpg') and img.mode != 'RGB':
             img = img.convert('RGB')
 
-        if img.format != 'gif':
+        if img.format.lower() != 'gif':
 
             if self.field.crop:
                 thumb = ImageOps.fit(
@@ -87,7 +88,7 @@ class ResizedImageFieldFile(ImageField.attr_class):
                 thumb = img
 
         img_info = img.info
-        if img.format != 'gif':
+        if img.format.lower() != 'gif':
             if not self.field.keep_meta:
                 img_info.pop('exif', None)
             ImageFile.MAXBLOCK = max(ImageFile.MAXBLOCK, thumb.size[0] * thumb.size[1])
@@ -98,7 +99,12 @@ class ResizedImageFieldFile(ImageField.attr_class):
         else:
             new_content = BytesIO()
             # img.save(new_content, **img_info)
-            new_content = ContentFile(img.to_bytes())
+            frames = ImageSequence.Iterator(img)
+            om = next(frames)
+            om.info = img.info
+            om.save(new_content, format='gif', save_all=True, append_images=list(frames))
+            new_content = ContentFile(new_content.getvalue())
+            img_format = img.format
 
         name = self.get_name(name, img_format)
         super(ResizedImageFieldFile, self).save(name, new_content, save)
