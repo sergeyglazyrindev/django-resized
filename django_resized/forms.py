@@ -70,29 +70,35 @@ class ResizedImageFieldFile(ImageField.attr_class):
         if self.field.force_format and self.field.force_format.lower() in ('jpeg', 'jpg') and img.mode != 'RGB':
             img = img.convert('RGB')
 
-        if self.field.crop:
-            thumb = ImageOps.fit(
-                img,
-                self.field.size,
-                Image.ANTIALIAS,
-                centering=self.get_centring()
-            )
-        else:
-            img.thumbnail(
-                self.field.size,
-                Image.ANTIALIAS,
-            )
-            thumb = img
+        if img.format != 'gif':
+
+            if self.field.crop:
+                thumb = ImageOps.fit(
+                    img,
+                    self.field.size,
+                    Image.ANTIALIAS,
+                    centering=self.get_centring()
+                )
+            else:
+                img.thumbnail(
+                    self.field.size,
+                    Image.ANTIALIAS,
+                )
+                thumb = img
 
         img_info = img.info
-        if not self.field.keep_meta:
-            img_info.pop('exif', None)
-
-        ImageFile.MAXBLOCK = max(ImageFile.MAXBLOCK, thumb.size[0] * thumb.size[1])
-        new_content = BytesIO()
-        img_format = img.format if self.field.force_format is None else self.field.force_format
-        thumb.save(new_content, format=img_format, quality=self.field.quality, **img_info)
-        new_content = ContentFile(new_content.getvalue())
+        if img.format != 'gif':
+            if not self.field.keep_meta:
+                img_info.pop('exif', None)
+            ImageFile.MAXBLOCK = max(ImageFile.MAXBLOCK, thumb.size[0] * thumb.size[1])
+            new_content = BytesIO()
+            img_format = img.format if self.field.force_format is None else self.field.force_format
+            thumb.save(new_content, format=img_format, quality=self.field.quality, **img_info)
+            new_content = ContentFile(new_content.getvalue())
+        else:
+            new_content = BytesIO()
+            img.save(new_content, **img_info)
+            new_content = ContentFile(new_content.getvalue())
 
         name = self.get_name(name, img_format)
         super(ResizedImageFieldFile, self).save(name, new_content, save)
