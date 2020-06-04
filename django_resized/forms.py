@@ -97,8 +97,8 @@ class ResizedImageFieldFile(ImageField.attr_class):
             new_content = ContentFile(new_content.getvalue())
         else:
             new_content = BytesIO()
-            img.save(new_content, **img_info)
-            new_content = ContentFile(new_content.getvalue())
+            # img.save(new_content, **img_info)
+            new_content = ContentFile(img.to_bytes())
 
         name = self.get_name(name, img_format)
         super(ResizedImageFieldFile, self).save(name, new_content, save)
