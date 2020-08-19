@@ -6,6 +6,8 @@ from PIL import ImageSequence
 from django.conf import settings
 from django.core.files.base import ContentFile
 
+from .image_processing import make_factory_for_image_processing
+
 try:
     from sorl.thumbnail import ImageField
 except ImportError:
@@ -71,40 +73,17 @@ class ResizedImageFieldFile(ImageField.attr_class):
         if self.field.force_format and self.field.force_format.lower() in ('jpeg', 'jpg') and img.mode != 'RGB':
             img = img.convert('RGB')
 
-        if img.format.lower() != 'gif':
-
-            if self.field.crop:
-                thumb = ImageOps.fit(
-                    img,
-                    self.field.size,
-                    Image.ANTIALIAS,
-                    centering=self.get_centring()
-                )
-            else:
-                img.thumbnail(
-                    self.field.size,
-                    Image.ANTIALIAS,
-                )
-                thumb = img
-
-        img_info = img.info
-        if img.format.lower() != 'gif':
-            if not self.field.keep_meta:
-                img_info.pop('exif', None)
-            ImageFile.MAXBLOCK = max(ImageFile.MAXBLOCK, thumb.size[0] * thumb.size[1])
-            new_content = BytesIO()
-            img_format = img.format if self.field.force_format is None else self.field.force_format
-            thumb.save(new_content, format=img_format, quality=self.field.quality, **img_info)
-            new_content = ContentFile(new_content.getvalue())
+        imgfactory = make_factory_for_image_processing(img)
+        if self.field.crop:
+            thumb = imgfactory.crop(self.field.size, self.get_centering())
         else:
-            new_content = BytesIO()
-            # img.save(new_content, **img_info)
-            frames = ImageSequence.Iterator(img)
-            om = next(frames)
-            om.info = img.info
-            om.save(new_content, format='gif', save_all=True, append_images=list(frames))
-            new_content = ContentFile(new_content.getvalue())
-            img_format = img.format
+            thumb = imgfactory.make_thumbnail(self.field.size)
+        img_info = img.info
+        if not self.field.keep_meta:
+            img_info.pop('exif', None)
+        ImageFile.MAXBLOCK = max(ImageFile.MAXBLOCK, thumb.size[0] * thumb.size[1])
+        img_format = img.format if self.field.force_format is None else self.field.force_format
+        new_content = imgfactory.save_to_the_buffer(img_format, self.field.quality, **img_info)
 
         name = self.get_name(name, img_format)
         super(ResizedImageFieldFile, self).save(name, new_content, save)
@@ -117,7 +96,7 @@ class ResizedImageFieldFile(ImageField.attr_class):
             name = name.rsplit('.', 1)[0] + extensions[format]
         return name
 
-    def get_centring(self):
+    def get_centering(self):
         vertical = {
             'top': 0,
             'middle': 0.5,
