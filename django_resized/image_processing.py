@@ -83,7 +83,7 @@ class GifImageProcessingFactory(IImageProcessingFactory):
         om.info = self.img.info
         new_content = BytesIO()
         om.save(new_content, format='gif', save_all=True, append_images=list(frames))
-        self.img = Image.frombuffer(om.mode, size, new_content)
+        self.img = Image.frombytes(om.mode, size, new_content.getvalue(), 'raw')
         return self.img
 
     def arbitrary_cropping(self, size, box, method=Image.ANTIALIAS):
@@ -92,8 +92,9 @@ class GifImageProcessingFactory(IImageProcessingFactory):
         om = next(frames)
         om.info = self.img.info
         new_content = BytesIO()
-        om.save(new_content, format='gif', save_all=True, append_images=list(frames))
-        self.img = Image.frombuffer(om.mode, size, new_content)
+        frames = list(frames)
+        om.save(new_content, format='gif', save_all=True, append_images=frames)
+        self.img = Image.frombytes(om.mode, size, new_content.getvalue(), 'raw')
         return self.img
 
     def make_thumbnail(self, size, method=Image.ANTIALIAS):
@@ -103,7 +104,7 @@ class GifImageProcessingFactory(IImageProcessingFactory):
         om.info = self.img.info
         new_content = BytesIO()
         om.save(new_content, format='gif', save_all=True, append_images=list(frames))
-        self.img = Image.frombuffer(om.mode, size, new_content)
+        self.img = Image.frombytes(om.mode, size, new_content.getvalue(), 'raw')
         return self.img
 
     def save_to_the_buffer(self, compression_format, quality, **img_info):
