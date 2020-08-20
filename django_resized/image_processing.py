@@ -33,12 +33,14 @@ class DefaultImageProcessingFactory(IImageProcessingFactory):
             method,
             centering=centering
         )
+        return self.img
 
     def make_thumbnail(self, size, method=Image.ANTIALIAS):
         self.img = self.img.thumbnail(
             size,
             method
         )
+        return self.img
 
     def save_to_the_buffer(self, compression_format, quality, **img_info):
         new_content = BytesIO()
@@ -73,6 +75,7 @@ class GifImageProcessingFactory(IImageProcessingFactory):
         new_content = BytesIO()
         om.save(new_content, format='gif', save_all=True, append_images=list(frames))
         self.img = Image.frombuffer(om.mode, size, new_content)
+        return self.img
 
     def make_thumbnail(self, size, method=Image.ANTIALIAS):
         frames = ImageSequence.Iterator(self.img)
@@ -82,6 +85,7 @@ class GifImageProcessingFactory(IImageProcessingFactory):
         new_content = BytesIO()
         om.save(new_content, format='gif', save_all=True, append_images=list(frames))
         self.img = Image.frombuffer(om.mode, size, new_content)
+        return self.img
 
     def save_to_the_buffer(self, compression_format, quality, **img_info):
         new_content = BytesIO()
