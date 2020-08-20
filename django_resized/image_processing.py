@@ -65,11 +65,30 @@ def thumbnails(frames, size, centering=None, method=Image.ANTIALIAS):
         yield thumbnail
 
 
+def cropped_thumbnails(frames, size, box, method=Image.ANTIALIAS):
+    for frame in frames:
+        thumbnail = frame.copy()
+        thumbnail = thumbnail.crop(
+            box
+        )
+        yield thumbnail
+
+
 class GifImageProcessingFactory(IImageProcessingFactory):
 
     def crop(self, size, centering, method=Image.ANTIALIAS):
         frames = ImageSequence.Iterator(self.img)
         frames = thumbnails(frames, size, centering=centering, method=method)
+        om = next(frames)
+        om.info = self.img.info
+        new_content = BytesIO()
+        om.save(new_content, format='gif', save_all=True, append_images=list(frames))
+        self.img = Image.frombuffer(om.mode, size, new_content)
+        return self.img
+
+    def arbitrary_cropping(self, size, box, method=Image.ANTIALIAS):
+        frames = ImageSequence.Iterator(self.img)
+        frames = cropped_thumbnails(frames, size, box, method=method)
         om = next(frames)
         om.info = self.img.info
         new_content = BytesIO()
