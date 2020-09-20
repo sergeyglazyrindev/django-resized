@@ -36,7 +36,7 @@ class DefaultImageProcessingFactory(IImageProcessingFactory):
         return self.img
 
     def make_thumbnail(self, size, method=Image.ANTIALIAS):
-        self.img = self.img.thumbnail(
+        self.img.thumbnail(
             size,
             method
         )
@@ -71,7 +71,7 @@ def thumbnails(img, size, centering=None, method=Image.ANTIALIAS):
                 centering=centering
             )
         else:
-            new_frame = new_frame.thumbnail(size, Image.ANTIALIAS)
+            new_frame.thumbnail(size, Image.ANTIALIAS)
         all_frames.append(new_frame)
     return all_frames
 
@@ -162,6 +162,6 @@ def make_factory_for_image_processing(img):
     }
     if img.format.lower() == 'gif':
         frames = ImageSequence.Iterator(img)
-        if len(frames) > 1:
+        if len(list(frames)) > 1:
             return AnimatedGifImageProcessingFactory(img)
     return factory_per_img_format['default'](img)
