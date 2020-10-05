@@ -144,7 +144,7 @@ class AnimatedGifImageProcessingFactory(IImageProcessingFactory):
         frames = thumbnails(self.img, size, centering=centering, method=method)
         om = frames[0]
         new_content = BytesIO()
-        om.save(new_content, optimize=True, format='gif', save_all=True, append_images=frames[1:])
+        om.save(new_content, optimize=True, format='gif', save_all=True, append_images=frames[1:], duration=self.img.info.get('duration'), loop=self.img.info.get('loop'))
         self.img = Image.open(new_content)
         return self.img
 
@@ -152,7 +152,7 @@ class AnimatedGifImageProcessingFactory(IImageProcessingFactory):
         frames = cropped_thumbnails(self.img, box, method=method)
         om = frames[0]
         new_content = BytesIO()
-        om.save(new_content, optimize=True, format='gif', save_all=True, append_images=frames[1:]) # , save_all=True, append_images=frames
+        om.save(new_content, optimize=True, format='gif', save_all=True, append_images=frames[1:], duration=self.img.info.get('duration'), loop=self.img.info.get('loop')) # , save_all=True, append_images=frames
         self.img = Image.open(new_content)
         return self.img
 
@@ -160,7 +160,7 @@ class AnimatedGifImageProcessingFactory(IImageProcessingFactory):
         frames = thumbnails(self.img, size, method=method)
         om = frames[0]
         new_content = BytesIO()
-        om.save(new_content, optimize=True, format='gif', save_all=True, append_images=frames[1:])
+        om.save(new_content, optimize=True, format='gif', save_all=True, append_images=frames[1:], duration=self.img.info.get('duration'), loop=self.img.info.get('loop'))
         self.img = Image.open(new_content)
         return self.img
 
@@ -169,7 +169,7 @@ class AnimatedGifImageProcessingFactory(IImageProcessingFactory):
         frames = clone_gif_thumbnails(self.img)
         om = frames[0]
         om.info = self.img.info
-        om.save(new_content, format='gif', optimize=True, save_all=True, append_images=frames[1:])
+        om.save(new_content, format='gif', optimize=True, save_all=True, append_images=frames[1:], duration=self.img.info.get('duration'), loop=self.img.info.get('loop'))
         new_content = ContentFile(new_content.getvalue())
         return new_content
 
