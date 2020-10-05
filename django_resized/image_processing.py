@@ -95,6 +95,24 @@ def cropped_thumbnails(img, box, method=Image.ANTIALIAS):
     return all_frames
 
 
+def clone_gif_thumbnails(img):
+    last_frame = img.convert('RGBA')
+    p = img.getpalette()
+    mode = analyseImage(img)['mode']
+    all_frames = []
+    frames = ImageSequence.Iterator(img)
+    for frame in frames:
+        if not frame.getpalette():
+            frame.putpalette(p)
+        new_frame = Image.new('RGBA', img.size)
+        if mode == 'partial':
+            new_frame.paste(last_frame)
+        new_frame.paste(frame, (0, 0), frame.convert('RGBA'))
+        last_frame = new_frame.copy()
+        all_frames.append(new_frame)
+    return all_frames
+
+
 def analyseImage(im):
     """
     Pre-process pass over the image to determine the mode (full or additive).
@@ -126,7 +144,7 @@ class AnimatedGifImageProcessingFactory(IImageProcessingFactory):
         frames = thumbnails(self.img, size, centering=centering, method=method)
         om = frames[0]
         new_content = BytesIO()
-        om.save(new_content, format='gif', save_all=True, append_images=frames[1:], loop=0, duration=self.img.info.get('duration', 1000))
+        om.save(new_content, optimize=True, format='gif', save_all=True, append_images=frames[1:])
         self.img = Image.open(new_content)
         return self.img
 
@@ -134,7 +152,7 @@ class AnimatedGifImageProcessingFactory(IImageProcessingFactory):
         frames = cropped_thumbnails(self.img, box, method=method)
         om = frames[0]
         new_content = BytesIO()
-        om.save(new_content, format='gif', save_all=True, append_images=frames[1:], loop=0, duration=self.img.info.get('duration', 1000)) # , save_all=True, append_images=frames
+        om.save(new_content, optimize=True, format='gif', save_all=True, append_images=frames[1:]) # , save_all=True, append_images=frames
         self.img = Image.open(new_content)
         return self.img
 
@@ -142,16 +160,16 @@ class AnimatedGifImageProcessingFactory(IImageProcessingFactory):
         frames = thumbnails(self.img, size, method=method)
         om = frames[0]
         new_content = BytesIO()
-        om.save(new_content, format='gif', save_all=True, append_images=frames[1:], loop=0, duration=self.img.info.get('duration', 1000))
+        om.save(new_content, optimize=True, format='gif', save_all=True, append_images=frames[1:])
         self.img = Image.open(new_content)
         return self.img
 
     def save_to_the_buffer(self, compression_format, quality, **img_info):
         new_content = BytesIO()
-        frames = ImageSequence.Iterator(self.img)
-        om = next(frames)
+        frames = clone_gif_thumbnails(self.img)
+        om = frames[0]
         om.info = self.img.info
-        om.save(new_content, format='gif', save_all=True, append_images=list(frames), loop=0, duration=self.img.info.get('duration', 1000))
+        om.save(new_content, format='gif', optimize=True, save_all=True, append_images=frames[1:])
         new_content = ContentFile(new_content.getvalue())
         return new_content
 
